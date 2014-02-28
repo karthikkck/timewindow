@@ -2,15 +2,51 @@ require 'yaml'
 
 class TimeWindow
 	@@weekDays = "Mon Tue Wed Thu Fri Sat Sun Mon Tue Wed Thu Fri Sat Sun"
+	@@filterStructure = { :days => [], :time => []}
 
 	def initialize(rangeString)
 		@rangeString = rangeString
 		@filter = createFilter()
 	end
 
+	def include?(checkTime)
+		return false if(!checkTime.instance_of?(Time))
+
+		@filter.each do |filter|
+			return true if(inRange?(filter, checkTime))
+		end
+		return false
+	end
+
 	private
+	def inRange?(filter, checkTime)
+		days = filter[:days]
+		timeRange = filter[:time]
+		inDays = true
+		inTime = true
+		checkHr = checkTime.hour
+		checkMin = checkTime.min
+
+		inDays = false if !days.empty? && !days.include?(checkTime.strftime "%a")
+		inTime = false if !timeRange.empty?
+
+		i = 0
+		while i < timeRange.length
+			if(checkHr >= timeRange[i] && checkHr < timeRange[i+2])
+				if(checkMin >= timeRange[i+1] && checkMin <= (timeRange[i+3] = 0 ? 59 : timeRange[i+3]))
+					inTime = true
+				end
+			end
+			i = i + 4
+		end
+
+		return inDays && inTime
+	end
+
 	def createFilter()
 		filter = []
+		return filter.push(@@filterStructure) if @rangeString.empty?
+
 		filterArr = @rangeString.split('; ')
 
 		filterArr.each do |x|
@@ -37,6 +73,6 @@ class TimeWindow
 			end
 			filter.push(filterElement)
 		end
-		puts filter.to_yaml
+		filter
 	end
 end
